@@ -3,6 +3,7 @@ package exemplo1;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,24 +29,33 @@ public class Aluno {
         return nome;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public void salvar() {
         String sql = "INSERT INTO aluno (nome, matricula) VALUES (?, ?)";
+        Aluno a = null;
 
         try {
             Connection conexao = new Conexao().getConexao();
-            PreparedStatement comando = conexao.prepareStatement(sql);
+            PreparedStatement comando = conexao.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             comando.setString(1, this.nome);
             comando.setString(2, this.matricula);
             comando.execute();
-            comando.close();
 
+            ResultSet resultado = comando.getGeneratedKeys();
+            resultado.next();
+            this.id = resultado.getInt(1);
+
+            comando.close();
             conexao.close();
         } catch (Exception e) {
             throw new RuntimeException();
         }
     }
 
-    public List<Aluno> listarAlunos() {
+    public static List<Aluno> listarAlunos() {
         ArrayList<Aluno> alunos = new ArrayList<>();
         String sql = "SELECT * FROM aluno";
 
@@ -69,4 +79,27 @@ public class Aluno {
 
         return alunos;
     }
+
+    public static Aluno pesquisarMatricula(String m) {
+        String sql = "SELECT * FROM aluno WHERE matricula = ?";
+        Aluno a = null;
+        try {
+            Connection conexao = new Conexao().getConexao();
+            PreparedStatement comando = conexao.prepareStatement(sql);
+            comando.setString(1, m);
+            ResultSet resultado = comando.executeQuery();
+            resultado.next();
+
+            int id = resultado.getInt("id");
+            String nome = resultado.getString("nome");
+            String matricula = resultado.getString("matricula");
+
+            a = new Aluno(id, nome, matricula);
+
+        } catch (Exception e) {
+            throw new RuntimeException();
+        }
+        return a;
+    }
+
 }
